@@ -15,7 +15,10 @@ const char* WINDOW_TITLE = "Microwave";
 const unsigned int getWindowDimension(const bool&);
 void framebufferSizeCallback(GLFWwindow *const, const int, const int);
 void processWindowInput(GLFWwindow *const);
-void setupGlBuffers(unsigned int&, unsigned int&, unsigned int&);
+
+template <size_t N, size_t M>
+void setupGlBuffers(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int&, unsigned int&, unsigned int&);
+
 const unsigned int compileShader(const GLenum, const char*);
 const unsigned int createShaderProgram(const char*, const char*);
 void teardownGlBuffers(const unsigned int&, const unsigned int&, const unsigned int&);
@@ -52,19 +55,8 @@ void processWindowInput(GLFWwindow *const window) {
 		glfwSetWindowShouldClose(window, true);
 }
 
-void setupGlBuffers(unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
-	const float vertices[] = {
-		-.5f, -.5f, .0f,
-		-.5f, .5f, .0f,
-		.5f, -.5f, .0f,
-		.5f, .5f, .0f,
-	};
-
-	const unsigned int indices[] = {
-		0, 1, 2,
-		1, 2, 3,
-	};
-
+template <size_t N, size_t M>
+void setupGlBuffers(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -75,10 +67,13 @@ void setupGlBuffers(unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -179,18 +174,87 @@ int main(void) {
 
 	const unsigned int shaderProgram = createShaderProgram("basic.vert", "basic.frag");
 
-	unsigned int VAO, VBO, EBO;
-	setupGlBuffers(VAO, VBO, EBO);
+	const unsigned int rectangleIndices[] = {
+		0, 1, 2,
+		1, 2, 3,
+	};
+
+	const float bodyVertices[] = {
+		-.5f, -.5f, 0.f,	.125f, .125f, .125f,
+		-.5f,  .5f, 0.f,	.125f, .125f, .125f,
+		 .5f, -.5f, 0.f,	.125f, .125f, .125f,
+		 .5f,  .5f, 0.f,	.125f, .125f, .125f,
+	};
+
+	unsigned int bodyVAO, bodyVBO, bodyEBO;
+
+	setupGlBuffers(bodyVertices, rectangleIndices, bodyVAO, bodyVBO, bodyEBO);
+
+	const float legOneVertices[] = {
+		-.4f, -.5f, 0.f,	.25f, .25f, .25f,
+		-.3f, -.5f, 0.f,	.25f, .25f, .25f,
+		-.4f, -.6f, 0.f,	.25f, .25f, .25f,
+		-.3f, -.6f, 0.f,	.25f, .25f, .25f,
+	};
+
+	unsigned int legOneVAO, legOneVBO, legOneEBO;
+
+	setupGlBuffers(legOneVertices, rectangleIndices, legOneVAO, legOneVBO, legOneEBO);
+
+	const float legTwoVertices[] = {
+		.4f, -.5f, 0.f,		.25f, .25f, .25f,
+		.3f, -.5f, 0.f,		.25f, .25f, .25f,
+		.4f, -.6f, 0.f,		.25f, .25f, .25f,
+		.3f, -.6f, 0.f,		.25f, .25f, .25f,
+	};
+
+	unsigned int legTwoVAO, legTwoVBO, legTwoEBO;
+
+	setupGlBuffers(legTwoVertices, rectangleIndices, legTwoVAO, legTwoVBO, legTwoEBO);
+
+	const float doorSlitVertices[] = {
+		.19f,  .5f, 0.f,	0.f, 0.f, 0.f,
+		.20f,  .5f, 0.f,	0.f, 0.f, 0.f,
+		.19f, -.5f, 0.f,	0.f, 0.f, 0.f,
+		.20f, -.5f, 0.f,	0.f, 0.f, 0.f,
+	};
+
+	unsigned int doorSlitVAO, doorSlitVBO, doorSlitEBO;
+
+	setupGlBuffers(doorSlitVertices, rectangleIndices, doorSlitVAO, doorSlitVBO, doorSlitEBO);
+
+	const float handleVertices[] = {
+		.10f,  .45f, 0.f,	.25f, .25f, .25f,
+		.15f,  .45f, 0.f,	.25f, .25f, .25f,
+		.10f, -.45f, 0.f,	.25f, .25f, .25f,
+		.15f, -.45f, 0.f,	.25f, .25f, .25f,
+	};
+
+	unsigned int handleVAO, handleVBO, handleEBO;
+
+	setupGlBuffers(handleVertices, rectangleIndices, handleVAO, handleVBO, handleEBO);
 
 	while (!glfwWindowShouldClose(window)) {
 		processWindowInput(window);
 
-		glClearColor(.54f, .81f, .0f, 1.f);
+		glClearColor(1.f, .33f, .0f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
 
+		glBindVertexArray(bodyVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(legOneVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(legTwoVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(doorSlitVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		glBindVertexArray(handleVAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(0);
@@ -200,7 +264,11 @@ int main(void) {
 		glfwPollEvents();
 	}
 
-	teardownGlBuffers(VAO, VBO, EBO);
+	teardownGlBuffers(bodyVAO, bodyVBO, bodyEBO);
+	teardownGlBuffers(legOneVAO, legOneVBO, legOneEBO);
+	teardownGlBuffers(legTwoVAO, legTwoVBO, legTwoEBO);
+	teardownGlBuffers(doorSlitVAO, doorSlitVBO, doorSlitEBO);
+	teardownGlBuffers(handleVAO, handleVBO, handleEBO);
 	glDeleteProgram(shaderProgram);
 	glfwTerminate();
 

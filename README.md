@@ -1,2 +1,2 @@
 # microwave-gl
-An interactive microwave OpenGL project
+An interactive microwave OpenGL project.
