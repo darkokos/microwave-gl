@@ -20,6 +20,10 @@
     <None Include="basic.frag" />
     <None Include="texture.frag" />
     <None Include="texture.vert" />
+    <None Include="text.vert" />
+    <None Include="text.frag" />
+    <None Include="lamp.vert" />
+    <None Include="lamp.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

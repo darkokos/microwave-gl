@@ -5,6 +5,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <map>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -12,16 +15,31 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include <glm/glm.hpp>
+
 using namespace std;
+using namespace glm;
 
-const char* WINDOW_TITLE = "Microwave";
+struct Button {
+	vec2	position;
+	vec2	size;
+	int value;
+	bool isPressed;
+};
 
+constexpr auto WINDOW_TITLE = "Microwave";
+
+Button buttons[16];
+
+void initButtons(const unsigned int&, const unsigned int&);
 const unsigned int getWindowDimension(const bool&);
 void framebufferSizeCallback(GLFWwindow *const, const int, const int);
-void processWindowInput(GLFWwindow *const);
+const unsigned int compileShader(const GLenum, const char*);
+const unsigned int createShaderProgram(const char*, const char*);
 const unsigned int loadTexture(const char*);
 void setup8BitTexture(const unsigned int&);
 void setupSharpTexture(const unsigned int&);
+const vector<float> createCircleVertices(const float&, const float&, const float&, const unsigned int&);
 
 template <size_t N, size_t M>
 void setupGlBuffersForBasicObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
@@ -29,9 +47,18 @@ void setupGlBuffersForBasicObject(const float (&)[N], const unsigned int (&)[M],
 template <size_t N, size_t M>
 void setupGlBuffersForTextureObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
-const unsigned int compileShader(const GLenum, const char*);
-const unsigned int createShaderProgram(const char*, const char*);
-void teardownGlBuffers(const unsigned int&, const unsigned int&, const unsigned int&);
+void setupGlBuffersForLampObject(const vector<float>&, unsigned int&, unsigned int&);
+
+template <size_t N, size_t M>
+void setupGlBuffersForTextObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
+
+void processWindowInput(GLFWwindow *const);
+void teardownGlElementBuffers(const unsigned int&, const unsigned int&, const unsigned int&);
+void teardownGlArrayBuffers(const unsigned int&, const unsigned int&);
+
+void initButtons(const unsigned int& windowWidth, const unsigned int& windowHeight) {
+	const float buttonWidth = 32.f, buttonHeight = 32.f;
+}
 
 const unsigned int getWindowDimension(const bool& is_height) {
 	int dimension;
@@ -58,109 +85,6 @@ const unsigned int getWindowDimension(const bool& is_height) {
 
 void framebufferSizeCallback(GLFWwindow *const window, const int width, const int height) {
 	glViewport(0, 0, width, height);
-}
-
-void processWindowInput(GLFWwindow *const window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-}
-
-const unsigned int loadTexture(const char* path) {
-	int width, height, numberOfChannels;
-	unsigned char* textureData = stbi_load(path, &width, &height, &numberOfChannels, 0);
-	if (textureData == nullptr) {
-		cerr << "Failed to load texture at path: " << path << endl;
-		stbi_image_free(textureData);
-		return 0;
-	}
-
-	stbi__vertical_flip(textureData, width, height, numberOfChannels);
-
-	int colourSpace;
-	switch (numberOfChannels) {
-		case 1: colourSpace = GL_RED; break;
-		case 3: colourSpace = GL_RGB; break;
-		case 4: colourSpace = GL_RGBA; break;
-		default: colourSpace = GL_RGB; break;
-	}
-
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, colourSpace, width, height, 0, colourSpace, GL_UNSIGNED_BYTE, textureData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	stbi_image_free(textureData);
-
-	return texture;
-}
-
-void setup8BitTexture (const unsigned int& texture) {
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-void setupSharpTexture(const unsigned int& texture) {
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-template <size_t N, size_t M>
-void setupGlBuffersForBasicObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-}
-
-template <size_t N, size_t M>
-void setupGlBuffersForTextureObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 }
 
 const unsigned int compileShader(const GLenum shaderType, const char* shaderPath) {
@@ -222,10 +146,174 @@ const unsigned int createShaderProgram(const char* vertexShaderPath, const char*
 	return shaderProgram;
 }
 
-void teardownGlBuffers(const unsigned int& VAO, const unsigned int& VBO, const unsigned int& EBO) {
+const unsigned int loadTexture(const char* path) {
+	int width, height, numberOfChannels;
+	unsigned char* textureData = stbi_load(path, &width, &height, &numberOfChannels, 0);
+	if (textureData == nullptr) {
+		cerr << "Failed to load texture at path: " << path << endl;
+		stbi_image_free(textureData);
+		return 0;
+	}
+
+	stbi__vertical_flip(textureData, width, height, numberOfChannels);
+
+	int colourSpace;
+	switch (numberOfChannels) {
+		case 1: colourSpace = GL_RED; break;
+		case 3: colourSpace = GL_RGB; break;
+		case 4: colourSpace = GL_RGBA; break;
+		default: colourSpace = GL_RGB; break;
+	}
+
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, colourSpace, width, height, 0, colourSpace, GL_UNSIGNED_BYTE, textureData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(textureData);
+
+	return texture;
+}
+
+void setup8BitTexture (const unsigned int& texture) {
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void setupSharpTexture(const unsigned int& texture) {
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+const vector<float> createCircleVertices(const float& centerX, const float& centerY, const float& radius, const unsigned int& segments) {
+	vector<float> vertices;
+	const float step = 2.f * M_PI / segments;
+
+	vertices.push_back(centerX);
+	vertices.push_back(centerY);
+
+	for (size_t i = 0; i <= segments; i++) {
+		float angle = step * i;
+		vertices.push_back((radius - .023) * cos(angle) + centerX);
+		vertices.push_back(radius * sin(angle) + centerY);
+	}
+
+	return vertices;
+}
+
+template <size_t N, size_t M>
+void setupGlBuffersForBasicObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+template <size_t N, size_t M>
+void setupGlBuffersForTextureObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+void setupGlBuffersForLampObject(const vector<float>& vertices, unsigned int& VAO, unsigned int& VBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+template <size_t N, size_t M>
+void setupGlBuffersForTextObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+void processWindowInput(GLFWwindow *const window) {
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+}
+
+void teardownGlElementBuffers(const unsigned int& VAO, const unsigned int& VBO, const unsigned int& EBO) {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &EBO);
+}
+
+void teardownGlArrayBuffers(const unsigned int& VAO, const unsigned int& VBO) {
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
 }
 
 int main(void) {
@@ -256,8 +344,13 @@ int main(void) {
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	const unsigned int basicShader = createShaderProgram("basic.vert", "basic.frag");
 	const unsigned int textureShader = createShaderProgram("texture.vert", "texture.frag");
+	const unsigned int lampShader = createShaderProgram("lamp.vert", "lamp.frag");
+	const unsigned int textShader = createShaderProgram("text.vert", "text.frag");
 
 	const unsigned int rectangleIndices[] = {
 		0, 1, 2,
@@ -341,6 +434,16 @@ int main(void) {
 
 	setupGlBuffersForBasicObject(handleVertices, rectangleIndices, handleVAO, handleVBO, handleEBO);
 
+	const float centerX = -.175f;
+	const float centerY = .3f;
+	const float radius = .05f;
+	const unsigned int segments = 100;
+	vector<float> lampVertices = createCircleVertices(centerX, centerY, radius, segments);
+
+	unsigned int lampVAO, lampVBO;
+
+	setupGlBuffersForLampObject(lampVertices, lampVAO, lampVBO);
+
 	// NOTE: Last object to be buffered
 	const float signatureVertices[] = {
 		-1.f,	1.f,		0.f, 1.f,
@@ -359,9 +462,6 @@ int main(void) {
 
 	setupSharpTexture(signature);
 	setup8BitTexture(food);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
 
 	while (!glfwWindowShouldClose(window)) {
 		processWindowInput(window);
@@ -413,6 +513,12 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
+		glUseProgram(lampShader);
+		glBindVertexArray(lampVAO);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, lampVertices.size() / 2);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
 		// NOTE: Always draw last
 		glUseProgram(textureShader);
 		glBindVertexArray(signatureVAO);
@@ -426,16 +532,17 @@ int main(void) {
 		glfwPollEvents();
 	}
 
-	teardownGlBuffers(bodyVAO, bodyVBO, bodyEBO);
-	teardownGlBuffers(legOneVAO, legOneVBO, legOneEBO);
-	teardownGlBuffers(legTwoVAO, legTwoVBO, legTwoEBO);
-	teardownGlBuffers(doorSlitVAO, doorSlitVBO, doorSlitEBO);
-	teardownGlBuffers(interiorVAO, interiorVBO, interiorEBO);
-	teardownGlBuffers(foodVAO, foodVBO, foodEBO);
-	teardownGlBuffers(handleVAO, handleVBO, handleEBO);
+	teardownGlElementBuffers(bodyVAO, bodyVBO, bodyEBO);
+	teardownGlElementBuffers(legOneVAO, legOneVBO, legOneEBO);
+	teardownGlElementBuffers(legTwoVAO, legTwoVBO, legTwoEBO);
+	teardownGlElementBuffers(doorSlitVAO, doorSlitVBO, doorSlitEBO);
+	teardownGlElementBuffers(interiorVAO, interiorVBO, interiorEBO);
+	teardownGlElementBuffers(foodVAO, foodVBO, foodEBO);
+	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
+	teardownGlArrayBuffers(lampVAO, lampVBO);
 
 	// NOTE: Always release last
-	teardownGlBuffers(signatureVAO, signatureVBO, signatureEBO);
+	teardownGlElementBuffers(signatureVAO, signatureVBO, signatureEBO);
 	glDeleteProgram(basicShader);
 	glfwTerminate();
 
