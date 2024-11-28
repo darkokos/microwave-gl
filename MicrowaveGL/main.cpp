@@ -30,6 +30,7 @@ struct Button {
 constexpr auto WINDOW_TITLE = "Microwave";
 
 Button buttons[16];
+bool isOpen = true;
 
 void initButtons(const unsigned int&, const unsigned int&);
 const unsigned int getWindowDimension(const bool&);
@@ -461,6 +462,17 @@ int main(void) {
 
 	setupGlBuffersForLampObject(lampVertices, lampVAO, lampVBO);
 
+	const float doorOpenVertices[] = {
+		-.50f,  .5f,		.1f, .1f, .1f,
+		-.45f,  .5f,		.1f, .1f, .1f,
+		-.50f, -.5f,		.1f, .1f, .1f,
+		-.45f, -.5f,		.1f, .1f, .1f,
+	};
+
+	unsigned int doorOpenVAO, doorOpenVBO, doorOpenEBO;
+
+	setupGlBuffersForBasicObject(doorOpenVertices, rectangleIndices, doorOpenVAO, doorOpenVBO, doorOpenEBO);
+
 	const float glassVertices[] = {
 		-.475f,  .40f,	0.f, .5f, 1.f, .5f,
 		 .175f,  .40f,	0.f, .5f, 1.f, .5f,
@@ -552,17 +564,26 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		glUseProgram(transparentShader);
-		glBindVertexArray(glassVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+		if (isOpen) {
+			glUseProgram(basicShader);
+			glBindVertexArray(doorOpenVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		}
+		else {
+			glUseProgram(transparentShader);
+			glBindVertexArray(glassVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
 
-		glUseProgram(basicShader);
-		glBindVertexArray(handleVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			glUseProgram(basicShader);
+			glBindVertexArray(handleVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		}
 
 		// NOTE: Always draw last
 		glUseProgram(textureShader);
@@ -584,6 +605,7 @@ int main(void) {
 	teardownGlElementBuffers(interiorVAO, interiorVBO, interiorEBO);
 	teardownGlElementBuffers(foodVAO, foodVBO, foodEBO);
 	teardownGlArrayBuffers(lampVAO, lampVBO);
+	teardownGlElementBuffers(doorOpenVAO, doorOpenVBO, doorOpenEBO);
 	teardownGlElementBuffers(glassVAO, glassVBO, glassEBO);
 	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
 
