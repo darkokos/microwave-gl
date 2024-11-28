@@ -24,6 +24,8 @@
     <None Include="text.frag" />
     <None Include="lamp.vert" />
     <None Include="lamp.frag" />
+    <None Include="transparent.vert" />
+    <None Include="transparent.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

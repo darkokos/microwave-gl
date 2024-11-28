@@ -45,6 +45,9 @@ template <size_t N, size_t M>
 void setupGlBuffersForBasicObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
 template <size_t N, size_t M>
+void setupGlBuffersForTransparentObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
+
+template <size_t N, size_t M>
 void setupGlBuffersForTextureObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
 void setupGlBuffersForLampObject(const vector<float>&, unsigned int&, unsigned int&);
@@ -237,6 +240,30 @@ void setupGlBuffersForBasicObject(const float (&vertices)[N], const unsigned int
 }
 
 template <size_t N, size_t M>
+void setupGlBuffersForTransparentObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+template <size_t N, size_t M>
 void setupGlBuffersForTextureObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -348,6 +375,7 @@ int main(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	const unsigned int basicShader = createShaderProgram("basic.vert", "basic.frag");
+	const unsigned int transparentShader = createShaderProgram("transparent.vert", "transparent.frag");
 	const unsigned int textureShader = createShaderProgram("texture.vert", "texture.frag");
 	const unsigned int lampShader = createShaderProgram("lamp.vert", "lamp.frag");
 	const unsigned int textShader = createShaderProgram("text.vert", "text.frag");
@@ -423,6 +451,27 @@ int main(void) {
 
 	setupGlBuffersForTextureObject(foodVertices, rectangleIndices, foodVAO, foodVBO, foodEBO);
 
+	const float centerX = -.175f;
+	const float centerY = .3f;
+	const float radius = .05f;
+	const unsigned int segments = 100;
+	vector<float> lampVertices = createCircleVertices(centerX, centerY, radius, segments);
+
+	unsigned int lampVAO, lampVBO;
+
+	setupGlBuffersForLampObject(lampVertices, lampVAO, lampVBO);
+
+	const float glassVertices[] = {
+		-.475f,  .40f,	0.f, .5f, 1.f, .5f,
+		 .175f,  .40f,	0.f, .5f, 1.f, .5f,
+		-.475f, -.40f,	0.f, .5f, 1.f, .5f,
+		 .175f, -.40f,	0.f, .5f, 1.f, .5f,
+	};
+
+	unsigned int glassVAO, glassVBO, glassEBO;
+
+	setupGlBuffersForTransparentObject(glassVertices, rectangleIndices, glassVAO, glassVBO, glassEBO);
+
 	const float handleVertices[] = {
 		.10f,  .45f,	.25f, .25f, .25f,
 		.15f,  .45f,	.25f, .25f, .25f,
@@ -433,16 +482,6 @@ int main(void) {
 	unsigned int handleVAO, handleVBO, handleEBO;
 
 	setupGlBuffersForBasicObject(handleVertices, rectangleIndices, handleVAO, handleVBO, handleEBO);
-
-	const float centerX = -.175f;
-	const float centerY = .3f;
-	const float radius = .05f;
-	const unsigned int segments = 100;
-	vector<float> lampVertices = createCircleVertices(centerX, centerY, radius, segments);
-
-	unsigned int lampVAO, lampVBO;
-
-	setupGlBuffersForLampObject(lampVertices, lampVAO, lampVBO);
 
 	// NOTE: Last object to be buffered
 	const float signatureVertices[] = {
@@ -507,15 +546,21 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		glUseProgram(basicShader);
-		glBindVertexArray(handleVAO);
+		glUseProgram(lampShader);
+		glBindVertexArray(lampVAO);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, lampVertices.size() / 2);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(transparentShader);
+		glBindVertexArray(glassVAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		glUseProgram(lampShader);
-		glBindVertexArray(lampVAO);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, lampVertices.size() / 2);
+		glUseProgram(basicShader);
+		glBindVertexArray(handleVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);
 
@@ -538,8 +583,9 @@ int main(void) {
 	teardownGlElementBuffers(doorSlitVAO, doorSlitVBO, doorSlitEBO);
 	teardownGlElementBuffers(interiorVAO, interiorVBO, interiorEBO);
 	teardownGlElementBuffers(foodVAO, foodVBO, foodEBO);
-	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
 	teardownGlArrayBuffers(lampVAO, lampVBO);
+	teardownGlElementBuffers(glassVAO, glassVBO, glassEBO);
+	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
 
 	// NOTE: Always release last
 	teardownGlElementBuffers(signatureVAO, signatureVBO, signatureEBO);
