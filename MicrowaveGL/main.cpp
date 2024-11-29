@@ -29,6 +29,9 @@ struct Button {
 
 constexpr auto WINDOW_TITLE = "Microwave";
 
+int windowWidth;
+int windowHeight;
+
 Button buttons[16];
 bool isOpen = true;
 
@@ -88,6 +91,8 @@ const unsigned int getWindowDimension(const bool& is_height) {
 }
 
 void framebufferSizeCallback(GLFWwindow *const window, const int width, const int height) {
+	windowWidth = width;
+	windowHeight = height;
 	glViewport(0, 0, width, height);
 }
 
@@ -345,7 +350,7 @@ void teardownGlArrayBuffers(const unsigned int& VAO, const unsigned int& VBO) {
 }
 
 int main(void) {
-	const int width = getWindowDimension(false), height = getWindowDimension(true);
+	const int windowWidth = getWindowDimension(false), windowHeight = getWindowDimension(true);
 
 	if (!glfwInit()) {
 		cerr << "Failed to initialise GLFW." << endl;
@@ -356,7 +361,7 @@ int main(void) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(width, height, WINDOW_TITLE, nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, WINDOW_TITLE, nullptr, nullptr);
 	if (!window) {
 		cerr << "Failed to create a GLFW window." << endl;
 		glfwTerminate();
