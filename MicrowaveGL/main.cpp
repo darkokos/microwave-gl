@@ -20,11 +20,30 @@
 using namespace std;
 using namespace glm;
 
+enum NumpadCharacter {
+	One,
+	Two,
+	Three,
+	Four,
+	Five,
+	Six,
+	Seven,
+	Eight,
+	Nine,
+	Open,
+	Zero,
+	Close,
+	Start,
+	Stop,
+	Reset,
+	Break,
+};
+
 struct Button {
-	vec2	position;
-	vec2	size;
-	int value;
-	bool isPressed;
+	vec2 position;
+	unsigned int width;
+	unsigned int height;
+	NumpadCharacter value;
 };
 
 constexpr auto WINDOW_TITLE = "Microwave";
@@ -33,11 +52,15 @@ int windowWidth;
 int windowHeight;
 
 Button buttons[16];
-bool isOpen = true;
+unsigned int timerValue[4] = { 0, 0, 0, 0 };
+bool isOpen;
+bool isRunning;
+bool isBroken;
 
 void initButtons(const unsigned int&, const unsigned int&);
 const unsigned int getWindowDimension(const bool&);
 void framebufferSizeCallback(GLFWwindow *const, const int, const int);
+void parseButtonPress(const NumpadCharacter&);
 const unsigned int compileShader(const GLenum, const char*);
 const unsigned int createShaderProgram(const char*, const char*);
 const unsigned int loadTexture(const char*);
@@ -55,6 +78,9 @@ template <size_t N, size_t M>
 void setupGlBuffersForTextureObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
 void setupGlBuffersForLampObject(const vector<float>&, unsigned int&, unsigned int&);
+
+template <size_t N, size_t M>
+void setupGlBuffersForIndicatorObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
 template <size_t N, size_t M>
 void setupGlBuffersForTextObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
@@ -94,6 +120,30 @@ void framebufferSizeCallback(GLFWwindow *const window, const int width, const in
 	windowWidth = width;
 	windowHeight = height;
 	glViewport(0, 0, width, height);
+}
+
+void parseButtonPress(const NumpadCharacter& pressedCharacter) {
+	if (isBroken && pressedCharacter != Break)
+		isBroken = false;
+
+	switch (pressedCharacter) {
+		case One: break;
+		case Two: break;
+		case Three: break;
+		case Four: break;
+		case Five: break;
+		case Six: break;
+		case Seven: break;
+		case Eight: break;
+		case Nine: break;
+		case Open: isOpen = true;
+		case Zero: break;
+		case Close: isOpen = false;
+		case Start: isRunning = true;
+		case Stop: isRunning = false;
+		case Reset: isRunning = false;
+		case Break: isBroken = true;
+	}
 }
 
 const unsigned int compileShader(const GLenum shaderType, const char* shaderPath) {
@@ -310,7 +360,7 @@ void setupGlBuffersForLampObject(const vector<float>& vertices, unsigned int& VA
 }
 
 template <size_t N, size_t M>
-void setupGlBuffersForTextObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+void setupGlBuffersForIndicatorObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
@@ -322,6 +372,30 @@ void setupGlBuffersForTextObject(const float (&vertices)[N], const unsigned int 
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
+template <size_t N, size_t M>
+void setupGlBuffersForTextObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_DYNAMIC_DRAW);
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -384,6 +458,7 @@ int main(void) {
 	const unsigned int transparentShader = createShaderProgram("transparent.vert", "transparent.frag");
 	const unsigned int textureShader = createShaderProgram("texture.vert", "texture.frag");
 	const unsigned int lampShader = createShaderProgram("lamp.vert", "lamp.frag");
+	const unsigned int indicatorShader = createShaderProgram("indicator.vert", "indicator.frag");
 	const unsigned int textShader = createShaderProgram("text.vert", "text.frag");
 
 	const unsigned int rectangleIndices[] = {
@@ -500,6 +575,105 @@ int main(void) {
 
 	setupGlBuffersForBasicObject(handleVertices, rectangleIndices, handleVAO, handleVBO, handleEBO);
 
+	const float firstDigitVertices[] = {
+		.25f,  .41f,		0.f, 1.f,
+		.29f,  .41f,		1.f, 1.f,
+		.25f,  .32f,		0.f, 0.f,
+		.29f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int firstDigitVAO, firstDigitVBO, firstDigitEBO;
+
+	setupGlBuffersForTextureObject(firstDigitVertices, rectangleIndices, firstDigitVAO, firstDigitVBO, firstDigitEBO);
+
+	const float secondDigitVertices[] = {
+		.29f,  .41f,		0.f, 1.f,
+		.33f,  .41f,		1.f, 1.f,
+		.29f,  .32f,		0.f, 0.f,
+		.33f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int secondDigitVAO, secondDigitVBO, secondDigitEBO;
+
+	setupGlBuffersForTextureObject(secondDigitVertices, rectangleIndices, secondDigitVAO, secondDigitVBO, secondDigitEBO);
+
+	const float separatorBackgroundVertices[] = {
+		.33f, .41f,		0.f, 0.f, 0.f,
+		.37f, .41f,		0.f, 0.f, 0.f,
+		.33f, .32f,		0.f, 0.f, 0.f,
+		.37f, .32f,		0.f, 0.f, 0.f,
+	};
+
+	unsigned int separatorBackgroundVAO, separatorBackgroundVBO, separatorBackgroundEBO;
+
+	setupGlBuffersForBasicObject(separatorBackgroundVertices, rectangleIndices, separatorBackgroundVAO, separatorBackgroundVBO, separatorBackgroundEBO);
+
+	const float firstSeparatorVertices[] = {
+		.3475f, .39f, 	1.f, 1.f, 1.f,
+		.3525f, .39f,	1.f, 1.f, 1.f,
+		.3475f, .38f, 	1.f, 1.f, 1.f,
+		.3525f, .38f,	1.f, 1.f, 1.f,
+	};
+
+	unsigned int firstSeparatorVAO, firstSeparatorVBO, firstSeparatorEBO;
+
+	setupGlBuffersForBasicObject(firstSeparatorVertices, rectangleIndices, firstSeparatorVAO, firstSeparatorVBO, firstSeparatorEBO);
+
+	const float secondSeparatorVertices[] = {
+		.3475f, .36f,	1.f, 1.f, 1.f,
+		.3525f, .36f,	1.f, 1.f, 1.f,
+		.3475f, .35f,	1.f, 1.f, 1.f,
+		.3525f, .35f,	1.f, 1.f, 1.f,
+	};
+
+	unsigned int secondSeparatorVAO, secondSeparatorVBO, secondSeparatorEBO;
+
+	setupGlBuffersForBasicObject(secondSeparatorVertices, rectangleIndices, secondSeparatorVAO, secondSeparatorVBO, secondSeparatorEBO);
+
+	const float thirdDigitVertices[] = {
+		.37f,  .41f,		0.f, 1.f,
+		.41f,  .41f,		1.f, 1.f,
+		.37f,  .32f,		0.f, 0.f,
+		.41f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int thirdDigitVAO, thirdDigitVBO, thirdDigitEBO;
+
+	setupGlBuffersForTextureObject(thirdDigitVertices, rectangleIndices, thirdDigitVAO, thirdDigitVBO, thirdDigitEBO);
+
+	const float fourthDigitVertices[] = {
+		.41f,  .41f,		0.f, 1.f,
+		.45f,  .41f,		1.f, 1.f,
+		.41f,  .32f,		0.f, 0.f,
+		.45f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int fourthDigitVAO, fourthDigitVBO, fourthDigitEBO;
+
+	setupGlBuffersForTextureObject(fourthDigitVertices, rectangleIndices, fourthDigitVAO, fourthDigitVBO, fourthDigitEBO);
+
+	const float indicatorVertices[] = {
+		.34f,  .23f,	.75f, 0.f, 0.f,
+		.36f,  .23f,	.75f, 0.f, 0.f,
+		.34f,  .19f,	.75f, 0.f, 0.f,
+		.36f,  .19f,	.75f, 0.f, 0.f,
+	};
+
+	unsigned int indicatorVAO, indicatorVBO, indicatorEBO;
+
+	setupGlBuffersForIndicatorObject(indicatorVertices, rectangleIndices, indicatorVAO, indicatorVBO, indicatorEBO);
+
+	const float numpadVertices[] = {
+		.25f,  .10f,		0.f, 1.f,
+		.45f,  .10f,		1.f, 1.f,
+		.25f, -.45f,		0.f, 0.f,
+		.45f, -.45f,		1.f, 0.f,
+	};
+
+	unsigned int numpadVAO, numpadVBO, numpadEBO;
+
+	setupGlBuffersForTextureObject(numpadVertices, rectangleIndices, numpadVAO, numpadVBO, numpadEBO);
+
 	// NOTE: Last object to be buffered
 	const float signatureVertices[] = {
 		-1.f,	1.f,		0.f, 1.f,
@@ -515,9 +689,25 @@ int main(void) {
 	// NOTE: After all objects have been buffered
 	const unsigned int signature = loadTexture("res/signature.png");
 	const unsigned int food = loadTexture("res/food.png");
+	const unsigned int numpad = loadTexture("res/numpad.png");
+	const unsigned int digits[10] = {
+		loadTexture("res/0.png"),
+		loadTexture("res/1.png"),
+		loadTexture("res/2.png"),
+		loadTexture("res/3.png"),
+		loadTexture("res/4.png"),
+		loadTexture("res/5.png"),
+		loadTexture("res/6.png"),
+		loadTexture("res/7.png"),
+		loadTexture("res/8.png"),
+		loadTexture("res/9.png"),
+	};
 
 	setupSharpTexture(signature);
 	setup8BitTexture(food);
+	setup8BitTexture(numpad);
+	for (size_t i = 0; i < 10; i++)
+		setup8BitTexture(digits[i]);
 
 	while (!glfwWindowShouldClose(window)) {
 		processWindowInput(window);
@@ -590,6 +780,70 @@ int main(void) {
 			glUseProgram(0);
 		}
 
+		glUseProgram(textureShader);
+		glBindVertexArray(firstDigitVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, digits[timerValue[0]]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(textureShader);
+		glBindVertexArray(secondDigitVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, digits[timerValue[1]]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(basicShader);
+		glBindVertexArray(separatorBackgroundVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(basicShader);
+		glBindVertexArray(firstSeparatorVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(basicShader);
+		glBindVertexArray(secondSeparatorVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(textureShader);
+		glBindVertexArray(thirdDigitVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, digits[timerValue[2]]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(textureShader);
+		glBindVertexArray(fourthDigitVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, digits[timerValue[3]]);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(textureShader);
+		glBindVertexArray(numpadVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, numpad);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		glUseProgram(indicatorShader);
+		glBindVertexArray(indicatorVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
 		// NOTE: Always draw last
 		glUseProgram(textureShader);
 		glBindVertexArray(signatureVAO);
@@ -613,6 +867,15 @@ int main(void) {
 	teardownGlElementBuffers(doorOpenVAO, doorOpenVBO, doorOpenEBO);
 	teardownGlElementBuffers(glassVAO, glassVBO, glassEBO);
 	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
+	teardownGlElementBuffers(firstDigitVAO, firstDigitVBO, firstDigitEBO);
+	teardownGlElementBuffers(secondDigitVAO, secondDigitVBO, secondDigitEBO);
+	teardownGlElementBuffers(separatorBackgroundVAO, separatorBackgroundVBO, separatorBackgroundVBO);
+	teardownGlElementBuffers(firstSeparatorVAO, firstSeparatorVBO, firstSeparatorEBO);
+	teardownGlElementBuffers(secondSeparatorVAO, secondSeparatorVBO, secondSeparatorEBO);
+	teardownGlElementBuffers(thirdDigitVAO, thirdDigitVBO, thirdDigitEBO);
+	teardownGlElementBuffers(fourthDigitVAO, fourthDigitVBO, fourthDigitEBO);
+	teardownGlElementBuffers(numpadVAO, numpadVBO, numpadEBO);
+	teardownGlElementBuffers(indicatorVAO, indicatorVBO, indicatorEBO);
 
 	// NOTE: Always release last
 	teardownGlElementBuffers(signatureVAO, signatureVBO, signatureEBO);

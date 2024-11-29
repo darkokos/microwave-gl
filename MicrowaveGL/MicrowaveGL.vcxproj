@@ -134,6 +134,8 @@
   <ItemGroup>
     <None Include="basic.frag" />
     <None Include="basic.vert" />
+    <None Include="indicator.frag" />
+    <None Include="indicator.vert" />
     <None Include="lamp.frag" />
     <None Include="lamp.vert" />
     <None Include="packages.config" />
