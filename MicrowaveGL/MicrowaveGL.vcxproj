@@ -139,8 +139,6 @@
     <None Include="lamp.frag" />
     <None Include="lamp.vert" />
     <None Include="packages.config" />
-    <None Include="text.frag" />
-    <None Include="text.vert" />
     <None Include="texture.frag" />
     <None Include="texture.vert" />
     <None Include="transparent.frag" />

@@ -36,6 +36,7 @@ enum NumpadCharacter {
 	Start,
 	Stop,
 	Reset,
+	Transparent,
 	Break,
 };
 
@@ -46,21 +47,37 @@ struct Button {
 	NumpadCharacter value;
 };
 
+struct Numpad {
+	vec2 normalisedPosition;
+	float normalisedWidth;
+	float normalisedHeight;
+	vec2 position;
+	unsigned int width;
+	unsigned int height;
+	Button buttons[17];
+};
+
 constexpr auto WINDOW_TITLE = "Microwave";
 
 int windowWidth;
 int windowHeight;
 
-Button buttons[16];
+Numpad numpad;
 unsigned int timerValue[4] = { 0, 0, 0, 0 };
 bool isOpen;
 bool isRunning;
+bool isTransparent = true;
 bool isBroken;
 
-void initButtons(const unsigned int&, const unsigned int&);
+void initNumpad(const vec2&, const float&, const float&);
+void updateNumpad();
 const unsigned int getWindowDimension(const bool&);
 void framebufferSizeCallback(GLFWwindow *const, const int, const int);
-void parseButtonPress(const NumpadCharacter&);
+void insertIntoTimer(const unsigned int&, const size_t&);
+void resetTimerValue();
+void handleButtonPress(const NumpadCharacter&);
+const bool isWithin(const Button&, const double&, const double&);
+void mouseClickCallback(GLFWwindow *const, const int, const int, const int);
 const unsigned int compileShader(const GLenum, const char*);
 const unsigned int createShaderProgram(const char*, const char*);
 const unsigned int loadTexture(const char*);
@@ -89,8 +106,43 @@ void processWindowInput(GLFWwindow *const);
 void teardownGlElementBuffers(const unsigned int&, const unsigned int&, const unsigned int&);
 void teardownGlArrayBuffers(const unsigned int&, const unsigned int&);
 
-void initButtons(const unsigned int& windowWidth, const unsigned int& windowHeight) {
-	const float buttonWidth = 32.f, buttonHeight = 32.f;
+void initNumpad(const vec2& position, const float& normalisedWidth, const float& normalisedHeight) {
+	numpad.normalisedPosition = position;
+	numpad.normalisedWidth = normalisedWidth;
+	numpad.normalisedHeight = normalisedHeight;
+
+	numpad.position = vec2((numpad.normalisedPosition.x + 1.f) * windowWidth / 2.f, (1.f - numpad.normalisedPosition.y) * windowHeight / 2.f);
+
+	numpad.width = numpad.normalisedWidth * windowWidth / 2.f;
+	numpad.height = numpad.normalisedHeight * windowHeight / 2.f;
+
+	const unsigned int buttonWidth = numpad.width / 3;
+	const unsigned int buttonHeight = numpad.height / 6;
+	for (size_t i = 0; i < 17; i++) {
+		const float buttonX = numpad.position.x + (i == 16 ? 2 : (i % 3)) * buttonWidth;
+		const float buttonY = numpad.position.y + (float)(i / 3) * buttonHeight;
+		numpad.buttons[i].position = vec2(buttonX, buttonY);
+		numpad.buttons[i].width = buttonWidth;
+		numpad.buttons[i].height = buttonHeight;
+		numpad.buttons[i].value = static_cast<NumpadCharacter>(i);
+	}
+}
+
+void updateNumpad() {
+	numpad.position = vec2((numpad.normalisedPosition.x + 1.f) * windowWidth / 2.f, (1.f - numpad.normalisedPosition.y) * windowHeight / 2.f);
+
+	numpad.width = numpad.normalisedWidth * windowWidth / 2.f;
+	numpad.height = numpad.normalisedHeight * windowHeight / 2.f;
+
+	const unsigned int buttonWidth = numpad.width / 3;
+	const unsigned int buttonHeight = numpad.height / 6;
+	for (size_t i = 0; i < 17; i++) {
+		const float buttonX = numpad.position.x + (i == 16 ? 2 : (i % 3)) * buttonWidth;
+		const float buttonY = numpad.position.y + (float)(i / 3) * buttonHeight;
+		numpad.buttons[i].position = vec2(buttonX, buttonY);
+		numpad.buttons[i].width = buttonWidth;
+		numpad.buttons[i].height = buttonHeight;
+	}
 }
 
 const unsigned int getWindowDimension(const bool& is_height) {
@@ -119,30 +171,75 @@ const unsigned int getWindowDimension(const bool& is_height) {
 void framebufferSizeCallback(GLFWwindow *const window, const int width, const int height) {
 	windowWidth = width;
 	windowHeight = height;
+	updateNumpad();
 	glViewport(0, 0, width, height);
 }
 
-void parseButtonPress(const NumpadCharacter& pressedCharacter) {
+void insertIntoTimer(const unsigned int& digit, const size_t& index) {
+	if (!index) {
+		timerValue[index] = digit;
+		return;
+	}
+	
+	insertIntoTimer(timerValue[index], index - 1);
+	timerValue[index] = digit;
+
+	if (timerValue[2] > 5) {
+		timerValue[2] -= 6;
+		timerValue[1]++;
+	}
+}
+
+void resetTimerValue() {
+	for (size_t i = 0; i < 4; i++)
+		timerValue[i] = 0;
+}
+
+void handleButtonPress(const NumpadCharacter& pressedCharacter) {
 	if (isBroken && pressedCharacter != Break)
 		isBroken = false;
 
 	switch (pressedCharacter) {
-		case One: break;
-		case Two: break;
-		case Three: break;
-		case Four: break;
-		case Five: break;
-		case Six: break;
-		case Seven: break;
-		case Eight: break;
-		case Nine: break;
-		case Open: isOpen = true;
-		case Zero: break;
-		case Close: isOpen = false;
-		case Start: isRunning = true;
-		case Stop: isRunning = false;
-		case Reset: isRunning = false;
-		case Break: isBroken = true;
+		case One: insertIntoTimer(1, 3); break;
+		case Two: insertIntoTimer(2, 3); break;
+		case Three: insertIntoTimer(3, 3); break;
+		case Four: insertIntoTimer(4, 3); break;
+		case Five: insertIntoTimer(5, 3); break;
+		case Six: insertIntoTimer(6, 3); break;
+		case Seven: insertIntoTimer(7, 3); break;
+		case Eight: insertIntoTimer(8, 3); break;
+		case Nine: insertIntoTimer(9, 3); break;
+		case Open: isOpen = true; break;
+		case Zero: insertIntoTimer(0, 3); break;
+		case Close: isOpen = false; break;
+		case Start: isRunning = true; break;
+		case Stop: isRunning = false; break;
+		case Reset: isRunning = false; resetTimerValue(); break;
+		case Transparent: isTransparent = !isTransparent; break;
+		case Break: isBroken = true; break;
+	}
+}
+
+const bool isWithin(const Button& button, const double& xpos, const double& ypos) {
+	return
+		xpos >= button.position.x &&
+		xpos <= button.position.x + button.width &&
+		ypos >= button.position.y &&
+		ypos <= button.position.y + button.height;
+}
+
+void mouseClickCallback(GLFWwindow* const window, const int button, const int action, const int mods) {
+	if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS)
+		return;
+
+	double xpos, ypos;
+	glfwGetCursorPos(window, &xpos, &ypos);
+
+	for (size_t i = 0; i < 17; i++) {
+		if (isWithin(numpad.buttons[i], xpos, ypos)) {
+			handleButtonPress(numpad.buttons[i].value);
+			break;
+		}
 	}
 }
 
@@ -424,7 +521,7 @@ void teardownGlArrayBuffers(const unsigned int& VAO, const unsigned int& VBO) {
 }
 
 int main(void) {
-	const int windowWidth = getWindowDimension(false), windowHeight = getWindowDimension(true);
+	windowWidth = getWindowDimension(false), windowHeight = getWindowDimension(true);
 
 	if (!glfwInit()) {
 		cerr << "Failed to initialise GLFW." << endl;
@@ -450,6 +547,7 @@ int main(void) {
 	}
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+	glfwSetMouseButtonCallback(window, mouseClickCallback);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -459,7 +557,6 @@ int main(void) {
 	const unsigned int textureShader = createShaderProgram("texture.vert", "texture.frag");
 	const unsigned int lampShader = createShaderProgram("lamp.vert", "lamp.frag");
 	const unsigned int indicatorShader = createShaderProgram("indicator.vert", "indicator.frag");
-	const unsigned int textShader = createShaderProgram("text.vert", "text.frag");
 
 	const unsigned int rectangleIndices[] = {
 		0, 1, 2,
@@ -674,6 +771,8 @@ int main(void) {
 
 	setupGlBuffersForTextureObject(numpadVertices, rectangleIndices, numpadVAO, numpadVBO, numpadEBO);
 
+	initNumpad(vec2(numpadVertices[0], numpadVertices[1]), abs(numpadVertices[4] - numpadVertices[0]), abs(numpadVertices[1] - numpadVertices[9]));
+
 	// NOTE: Last object to be buffered
 	const float signatureVertices[] = {
 		-1.f,	1.f,		0.f, 1.f,
@@ -767,6 +866,8 @@ int main(void) {
 			glUseProgram(0);
 		}
 		else {
+			const unsigned int uIsOpaque = glGetUniformLocation(transparentShader, "uIsOpaque");
+			glProgramUniform1i(transparentShader, uIsOpaque, !isTransparent);
 			glUseProgram(transparentShader);
 			glBindVertexArray(glassVAO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);

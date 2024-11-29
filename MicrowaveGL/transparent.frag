@@ -4,11 +4,11 @@ in vec4 chColour;
 
 out vec4 outColour;
 
-uniform bool isOpaque;
+uniform bool uIsOpaque;
 
 void main() {
-	if (isOpaque)
-		outColour = vec4(chColour.xyz, 0.);
+	if (uIsOpaque)
+		outColour = vec4(chColour.xyz, 1.);
 	else
 		outColour =	chColour;
 }
