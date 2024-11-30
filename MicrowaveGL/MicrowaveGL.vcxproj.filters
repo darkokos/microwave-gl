@@ -26,6 +26,10 @@
     <None Include="transparent.frag" />
     <None Include="indicator.vert" />
     <None Include="indicator.frag" />
+    <None Include="mask.vert" />
+    <None Include="mask.frag" />
+    <None Include="error.vert" />
+    <None Include="error.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

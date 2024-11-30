@@ -134,10 +134,14 @@
   <ItemGroup>
     <None Include="basic.frag" />
     <None Include="basic.vert" />
+    <None Include="error.frag" />
+    <None Include="error.vert" />
     <None Include="indicator.frag" />
     <None Include="indicator.vert" />
     <None Include="lamp.frag" />
     <None Include="lamp.vert" />
+    <None Include="mask.frag" />
+    <None Include="mask.vert" />
     <None Include="packages.config" />
     <None Include="texture.frag" />
     <None Include="texture.vert" />

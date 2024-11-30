@@ -61,6 +61,7 @@ struct Numpad {
 
 constexpr auto WINDOW_TITLE = "Microwave";
 constexpr double targetRenderTime = (double) 1 / 60;
+constexpr double breakdownTime = 1.8;
 
 int windowWidth;
 int windowHeight;
@@ -70,7 +71,9 @@ unsigned int timerValue[4] = { 0, 0, 0, 0 };
 bool isOpen;
 bool isRunning;
 bool isTransparent = true;
+bool isBreaking;
 bool isBroken;
+bool isRepairing;
 
 void initNumpad(const vec2&, const float&, const float&);
 void updateNumpad();
@@ -106,6 +109,9 @@ void setupGlBuffersForIndicatorObject(const float (&)[N], const unsigned int (&)
 
 template <size_t N, size_t M>
 void setupGlBuffersForTextObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
+
+template <size_t N, size_t M>
+void setupGlBuffersForMaskObject(const float (&)[N], const unsigned int (&)[M], unsigned int&, unsigned int&, unsigned int&);
 
 void processWindowInput(GLFWwindow *const);
 void teardownGlElementBuffers(const unsigned int&, const unsigned int&, const unsigned int&);
@@ -227,95 +233,190 @@ void resetTimerValue() {
 }
 
 void handleButtonPress(const NumpadCharacter& pressedCharacter) {
-	if (isBroken && pressedCharacter != Break)
-		isBroken = false;
-
 	switch (pressedCharacter) {
 		case One:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(1, 3);
 			break;
 		case Two:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(2, 3);
 			break;
 		case Three:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(3, 3);
 			break;
 		case Four:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(4, 3);
 			break;
 		case Five:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(5, 3);
 			break;
 		case Six:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(6, 3);
 			break;
 		case Seven:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(7, 3);
 			break;
 		case Eight:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(8, 3);
 			break;
 		case Nine:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(9, 3);
 			break;
 		case Open:
+			if (isBreaking || isRepairing)
+				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
 			isRunning = false;
 			isOpen = true;
 			break;
 		case Zero:
-			if (isRunning)
+			if (isRunning || isBreaking || isRepairing)
 				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
 
 			insertIntoTimer(0, 3);
 			break;
 		case Close:
+			if (isBreaking || isRepairing)
+				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
 			isOpen = false;
 			break;
 		case Start:
-			if (isTimerValueZero() || isOpen)
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
+			if (isTimerValueZero() || isOpen || isBreaking || isRepairing)
 				break;
 
 			isRunning = true;
 			break;
 		case Stop:
+			if (isBreaking || isRepairing)
+				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
 			isRunning = false;
 			break;
 		case Reset:
+			if (isBreaking || isRepairing)
+				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
 			isRunning = false;
 			resetTimerValue();
 			break;
 		case Transparent:
+			if (isBreaking || isRepairing)
+				break;
+
+			if (isBroken) {
+				isRepairing = true;
+				break;
+			}
+
 			isTransparent = !isTransparent;
 			break;
 		case Break:
-			isBroken = true;
+			if (isBreaking || isBroken || isRepairing)
+				break;
+
+			isBreaking = true;
 			break;
 	}
 }
@@ -604,6 +705,30 @@ void setupGlBuffersForTextObject(const float (&vertices)[N], const unsigned int 
 	glBindVertexArray(0);
 }
 
+template <size_t N, size_t M>
+void setupGlBuffersForMaskObject(const float (&vertices)[N], const unsigned int (&indices)[M], unsigned int& VAO, unsigned int& VBO, unsigned int& EBO) {
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(vertices), indices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
 void processWindowInput(GLFWwindow *const window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -654,14 +779,50 @@ int main(void) {
 
 	const unsigned int basicShader = createShaderProgram("basic.vert", "basic.frag");
 	const unsigned int transparentShader = createShaderProgram("transparent.vert", "transparent.frag");
+	const unsigned int smokeTransparentShader = createShaderProgram("transparent.vert", "transparent.frag");
 	const unsigned int textureShader = createShaderProgram("texture.vert", "texture.frag");
 	const unsigned int lampShader = createShaderProgram("lamp.vert", "lamp.frag");
 	const unsigned int indicatorShader = createShaderProgram("indicator.vert", "indicator.frag");
+	const unsigned int maskShader = createShaderProgram("mask.vert", "mask.frag");
+	const unsigned int errorShader = createShaderProgram("error.vert", "error.frag");
 
 	const unsigned int rectangleIndices[] = {
 		0, 1, 2,
 		1, 2, 3,
 	};
+
+	const float secondSmokeFirstCloudVertices[] = {
+		.45f,  .10f,	.25f, .25f, .25f, .75f,
+		.55f,  .10f,	.25f, .25f, .25f, .75f,
+		.45f, -.10f,	.25f, .25f, .25f, .75f,
+		.55f, -.10f,	.25f, .25f, .25f, .75f,
+	};
+
+	unsigned int secondSmokeFirstCloudVAO, secondSmokeFirstCloudVBO, secondSmokeFirstCloudEBO;
+
+	setupGlBuffersForTransparentObject(secondSmokeFirstCloudVertices, rectangleIndices, secondSmokeFirstCloudVAO, secondSmokeFirstCloudVBO, secondSmokeFirstCloudEBO);
+
+	const float secondSmokeSecondCloudVertices[] = {
+		.45f,  .40f,	.25f, .25f, .25f, .50f,
+		.65f,  .40f,	.25f, .25f, .25f, .50f,
+		.45f,  .00f,	.25f, .25f, .25f, .50f,
+		.65f,  .00f,	.25f, .25f, .25f, .50f,
+	};
+
+	unsigned int secondSmokeSecondCloudVAO, secondSmokeSecondCloudVBO, secondSmokeSecondCloudEBO;
+
+	setupGlBuffersForTransparentObject(secondSmokeSecondCloudVertices, rectangleIndices, secondSmokeSecondCloudVAO, secondSmokeSecondCloudVBO, secondSmokeSecondCloudEBO);
+	
+	const float secondSmokeThirdCloudVertices[] = {
+		.45f,  1.0f,	.25f, .25f, .25f, .25f,
+		.85f,  1.0f,	.25f, .25f, .25f, .25f,
+		.45f,  .20f,	.25f, .25f, .25f, .25f,
+		.85f,  .20f,	.25f, .25f, .25f, .25f,
+	};
+
+	unsigned int secondSmokeThirdCloudVAO, secondSmokeThirdCloudVBO, secondSmokeThirdCloudEBO;
+
+	setupGlBuffersForTransparentObject(secondSmokeThirdCloudVertices, rectangleIndices, secondSmokeThirdCloudVAO, secondSmokeThirdCloudVBO, secondSmokeThirdCloudEBO);
 
 	const float bodyVertices[] = {
 		-.5f, -.5f,		.125f, .125f, .125f,
@@ -783,6 +944,61 @@ int main(void) {
 
 	setupGlBuffersForBasicObject(handleVertices, rectangleIndices, handleVAO, handleVBO, handleEBO);
 
+	const float firstErrorVertices[] = {
+		.25f,  .41f,		0.f, 1.f,
+		.29f,  .41f,		1.f, 1.f,
+		.25f,  .32f,		0.f, 0.f,
+		.29f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int firstErrorVAO, firstErrorVBO, firstErrorEBO;
+
+	setupGlBuffersForTextureObject(firstErrorVertices, rectangleIndices, firstErrorVAO, firstErrorVBO, firstErrorEBO);
+
+	const float secondErrorVertices[] = {
+		.29f,  .41f,		0.f, 1.f,
+		.33f,  .41f,		1.f, 1.f,
+		.29f,  .32f,		0.f, 0.f,
+		.33f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int secondErrorVAO, secondErrorVBO, secondErrorEBO;
+
+	setupGlBuffersForTextureObject(secondErrorVertices, rectangleIndices, secondErrorVAO, secondErrorVBO, secondErrorEBO);
+
+	const float thirdErrorVertices[] = {
+		.33f, .41f,			0.f, 1.f,
+		.37f, .41f,			1.f, 1.f,
+		.33f, .32f,			0.f, 0.f,
+		.37f, .32f,			1.f, 0.f,
+	};
+
+	unsigned int thirdErrorVAO, thirdErrorVBO, thirdErrorEBO;
+
+	setupGlBuffersForTextureObject(thirdErrorVertices, rectangleIndices, thirdErrorVAO, thirdErrorVBO, thirdErrorEBO);
+
+	const float fourthErrorVertices[] = {
+		.37f,  .41f,		0.f, 1.f,
+		.41f,  .41f,		1.f, 1.f,
+		.37f,  .32f,		0.f, 0.f,
+		.41f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int fourthErrorVAO, fourthErrorVBO, fourthErrorEBO;
+
+	setupGlBuffersForTextureObject(fourthErrorVertices, rectangleIndices, fourthErrorVAO, fourthErrorVBO, fourthErrorEBO);
+
+	const float fifthErrorVertices[] = {
+		.41f,  .41f,		0.f, 1.f,
+		.45f,  .41f,		1.f, 1.f,
+		.41f,  .32f,		0.f, 0.f,
+		.45f,  .32f,		1.f, 0.f,
+	};
+
+	unsigned int fifthErrorVAO, fifthErrorVBO, fifthErrorEBO;
+
+	setupGlBuffersForTextureObject(fifthErrorVertices, rectangleIndices, fifthErrorVAO, fifthErrorVBO, fifthErrorEBO);
+
 	const float firstDigitVertices[] = {
 		.25f,  .41f,		0.f, 1.f,
 		.29f,  .41f,		1.f, 1.f,
@@ -884,7 +1100,39 @@ int main(void) {
 
 	initNumpad(vec2(numpadVertices[0], numpadVertices[1]), abs(numpadVertices[4] - numpadVertices[0]), abs(numpadVertices[1] - numpadVertices[9]));
 
-	// NOTE: Last object to be buffered
+	const float firstSmokeFirstCloudVertices[] = {
+		-.55f,  .10f,	.25f, .25f, .25f, .75f,
+		-.45f,  .10f,	.25f, .25f, .25f, .75f,
+		-.55f, -.10f,	.25f, .25f, .25f, .75f,
+		-.45f, -.10f,	.25f, .25f, .25f, .75f,
+	};
+
+	unsigned int firstSmokeFirstCloudVAO, firstSmokeFirstCloudVBO, firstSmokeFirstCloudEBO;
+
+	setupGlBuffersForTransparentObject(firstSmokeFirstCloudVertices, rectangleIndices, firstSmokeFirstCloudVAO, firstSmokeFirstCloudVBO, firstSmokeFirstCloudEBO);
+
+	const float firstSmokeSecondCloudVertices[] = {
+		-.65f,  .40f,	.25f, .25f, .25f, .50f,
+		-.45f,  .40f,	.25f, .25f, .25f, .50f,
+		-.65f,  .00f,	.25f, .25f, .25f, .50f,
+		-.45f,  .00f,	.25f, .25f, .25f, .50f,
+	};
+
+	unsigned int firstSmokeSecondCloudVAO, firstSmokeSecondCloudVBO, firstSmokeSecondCloudEBO;
+
+	setupGlBuffersForTransparentObject(firstSmokeSecondCloudVertices, rectangleIndices, firstSmokeSecondCloudVAO, firstSmokeSecondCloudVBO, firstSmokeSecondCloudEBO);
+
+	const float firstSmokeThirdCloudVertices[] = {
+		-.85f,  1.0f,	.25f, .25f, .25f, .25f,
+		-.45f,  1.0f,	.25f, .25f, .25f, .25f,
+		-.85f,  .20f,	.25f, .25f, .25f, .25f,
+		-.45f,  .20f,	.25f, .25f, .25f, .25f,
+	};
+
+	unsigned int firstSmokeThirdCloudVAO, firstSmokeThirdCloudVBO, firstSmokeThirdCloudEBO;
+
+	setupGlBuffersForTransparentObject(firstSmokeThirdCloudVertices, rectangleIndices, firstSmokeThirdCloudVAO, firstSmokeThirdCloudVBO, firstSmokeThirdCloudEBO);
+
 	const float signatureVertices[] = {
 		-1.f,	1.f,		0.f, 1.f,
 		-.8f,	1.f,		1.f, 1.f,
@@ -896,7 +1144,17 @@ int main(void) {
 
 	setupGlBuffersForTextureObject(signatureVertices, rectangleIndices, signatureVAO, signatureVBO, signatureEBO);
 
-	// NOTE: After all objects have been buffered
+	const float maskVertices[] = {
+		-1.f,  1.f,		0.f, 0.f, 0.f,
+		 1.f,  1.f,		0.f, 0.f, 0.f,
+		-1.f, -1.f,		0.f, 0.f, 0.f,
+		 1.f, -1.f,		0.f, 0.f, 0.f,
+	};
+
+	unsigned int maskVAO, maskVBO, maskEBO;
+
+	setupGlBuffersForMaskObject(maskVertices, rectangleIndices, maskVAO, maskVBO, maskEBO);
+
 	const unsigned int signature = loadTexture("res/signature.png");
 	const unsigned int food = loadTexture("res/food.png");
 	const unsigned int numpad = loadTexture("res/numpad.png");
@@ -912,15 +1170,25 @@ int main(void) {
 		loadTexture("res/8.png"),
 		loadTexture("res/9.png"),
 	};
+	const unsigned int letterE = loadTexture("res/E.png");
+	const unsigned int letterR = loadTexture("res/R.png");
+	const unsigned int letterO = loadTexture("res/O.png");
 
 	setupSharpTexture(signature);
 	setup8BitTexture(food);
 	setup8BitTexture(numpad);
 	for (size_t i = 0; i < 10; i++)
 		setup8BitTexture(digits[i]);
+	setup8BitTexture(letterE);
+	setup8BitTexture(letterR);
+	setup8BitTexture(letterO);
 
 	double renderStartTime = glfwGetTime();
 	double lastTimerChangeTime = glfwGetTime();
+	double breakdownBeginningTime = 0;
+	bool shouldErrorBeDisplayed = false;
+	double lastErrorDisplayChangeTime = 0;
+	double repairBeginningTime = 0;
 
 	while (!glfwWindowShouldClose(window)) {
 		processWindowInput(window);
@@ -935,6 +1203,98 @@ int main(void) {
 				lastTimerChangeTime = timerAssessmentTime;
 			}
 		} else lastTimerChangeTime = glfwGetTime();
+
+		if (isBreaking && !breakdownBeginningTime)
+			breakdownBeginningTime = glfwGetTime();
+
+		if (isBreaking && renderStartTime - breakdownBeginningTime >= breakdownTime) {
+			isBreaking = false;
+			isRunning = false;
+			breakdownBeginningTime = 0;
+			shouldErrorBeDisplayed = false;
+			lastErrorDisplayChangeTime = 0;
+			isBroken = true;
+		}
+
+		if (isRepairing && !repairBeginningTime)
+			repairBeginningTime = glfwGetTime();
+
+		if (isRepairing && renderStartTime - repairBeginningTime >= breakdownTime) {
+			isRepairing = false;
+			repairBeginningTime = 0;
+			isBroken = false;
+			resetTimerValue();
+		}
+
+		if (isBreaking) {
+			if (renderStartTime - breakdownBeginningTime >= breakdownTime / 3) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeFirstCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+
+			if (renderStartTime - breakdownBeginningTime >= 2 * breakdownTime / 3) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeSecondCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+
+			if (renderStartTime - breakdownBeginningTime >= breakdownTime) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeThirdCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+		} else if (isBroken) {
+			if (isRepairing) {
+				if (renderStartTime - repairBeginningTime <= breakdownTime / 3) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(secondSmokeFirstCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+
+				if (renderStartTime - repairBeginningTime <= 2 * breakdownTime / 3) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(secondSmokeSecondCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+
+				if (renderStartTime - repairBeginningTime <= breakdownTime) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(secondSmokeThirdCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+			} else {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeFirstCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeSecondCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(secondSmokeThirdCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+		}
 
 		glUseProgram(basicShader);
 		glBindVertexArray(bodyVAO);
@@ -974,7 +1334,7 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		if (isRunning) {
+		if (isRunning && !isBroken) {
 			glUseProgram(transparentShader);
 			glBindVertexArray(raysVAO);
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -983,7 +1343,7 @@ int main(void) {
 		}
 
 		const unsigned int lampShaderUIsOn = glGetUniformLocation(lampShader, "uIsOn");
-		glProgramUniform1i(lampShader, lampShaderUIsOn, isRunning);
+		glProgramUniform1i(lampShader, lampShaderUIsOn, isRunning && !isBroken);
 		glUseProgram(lampShader);
 		glBindVertexArray(lampVAO);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, (GLsizei) lampVertices.size() / 2);
@@ -1013,52 +1373,112 @@ int main(void) {
 			glUseProgram(0);
 		}
 
-		glUseProgram(textureShader);
-		glBindVertexArray(firstDigitVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, digits[timerValue[0]]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+		if (isBroken) {
+			if (renderStartTime - lastErrorDisplayChangeTime >= 1) {
+				shouldErrorBeDisplayed = !shouldErrorBeDisplayed;
+				lastErrorDisplayChangeTime = glfwGetTime();
+			}
 
-		glUseProgram(textureShader);
-		glBindVertexArray(secondDigitVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, digits[timerValue[1]]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			const unsigned int uIsOn = glGetUniformLocation(errorShader, "uIsOn");
+			glProgramUniform1i(errorShader, uIsOn, shouldErrorBeDisplayed);
 
-		glUseProgram(basicShader);
-		glBindVertexArray(separatorBackgroundVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			glUseProgram(errorShader);
+			glBindVertexArray(firstErrorVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, letterE);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
 
-		glUseProgram(basicShader);
-		glBindVertexArray(firstSeparatorVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			glUseProgram(errorShader);
+			glBindVertexArray(secondErrorVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, letterR);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
 
-		glUseProgram(basicShader);
-		glBindVertexArray(secondSeparatorVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			glUseProgram(errorShader);
+			glBindVertexArray(thirdErrorVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, letterR);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
 
-		glUseProgram(textureShader);
-		glBindVertexArray(thirdDigitVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, digits[timerValue[2]]);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+			glUseProgram(errorShader);
+			glBindVertexArray(fourthErrorVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, letterO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
 
-		glUseProgram(textureShader);
-		glBindVertexArray(fourthDigitVAO);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, digits[timerValue[3]]);
+			glUseProgram(errorShader);
+			glBindVertexArray(fifthErrorVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, letterR);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		} else {
+			glUseProgram(textureShader);
+			glBindVertexArray(firstDigitVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, digits[timerValue[0]]);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(textureShader);
+			glBindVertexArray(secondDigitVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, digits[timerValue[1]]);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(basicShader);
+			glBindVertexArray(separatorBackgroundVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(basicShader);
+			glBindVertexArray(firstSeparatorVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(basicShader);
+			glBindVertexArray(secondSeparatorVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(textureShader);
+			glBindVertexArray(thirdDigitVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, digits[timerValue[2]]);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+
+			glUseProgram(textureShader);
+			glBindVertexArray(fourthDigitVAO);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, digits[timerValue[3]]);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		}
+
+		const unsigned int indicatorShaderUIsOn = glGetUniformLocation(indicatorShader, "uIsOn");
+		glProgramUniform1i(indicatorShader, indicatorShaderUIsOn, isRunning && !isBroken);
+		const unsigned int indicatorShaderUTime = glGetUniformLocation(indicatorShader, "uTime");
+		glProgramUniform1f(indicatorShader, indicatorShaderUTime, 2 * (GLfloat) glfwGetTime());
+		glUseProgram(indicatorShader);
+		glBindVertexArray(indicatorVAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);
@@ -1071,17 +1491,76 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		const unsigned int indicatorShaderUIsOn = glGetUniformLocation(indicatorShader, "uIsOn");
-		glProgramUniform1i(indicatorShader, indicatorShaderUIsOn, isRunning);
-		const unsigned int indicatorShaderUTime = glGetUniformLocation(indicatorShader, "uTime");
-		glProgramUniform1f(indicatorShader, indicatorShaderUTime, 2 * glfwGetTime());
-		glUseProgram(indicatorShader);
-		glBindVertexArray(indicatorVAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-		glUseProgram(0);
+		if (isBreaking) {
+			if (renderStartTime - breakdownBeginningTime >= breakdownTime / 3) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeFirstCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
 
-		// NOTE: Always draw last
+			if (renderStartTime - breakdownBeginningTime >= 2 * breakdownTime / 3) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeSecondCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+
+			if (renderStartTime - breakdownBeginningTime >= breakdownTime) {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeThirdCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+		} else if (isBroken) {
+			if (isRepairing) {
+				if (renderStartTime - repairBeginningTime <= breakdownTime / 3) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(firstSmokeFirstCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+
+				if (renderStartTime - repairBeginningTime <= 2 * breakdownTime / 3) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(firstSmokeSecondCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+
+				if (renderStartTime - repairBeginningTime <= breakdownTime) {
+					glUseProgram(smokeTransparentShader);
+					glBindVertexArray(firstSmokeThirdCloudVAO);
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					glBindVertexArray(0);
+					glUseProgram(0);
+				}
+			} else {
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeFirstCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeSecondCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+
+				glUseProgram(smokeTransparentShader);
+				glBindVertexArray(firstSmokeThirdCloudVAO);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(0);
+				glUseProgram(0);
+			}
+		}
+
 		glUseProgram(textureShader);
 		glBindVertexArray(signatureVAO);
 		glActiveTexture(GL_TEXTURE0);
@@ -1089,6 +1568,20 @@ int main(void) {
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		glUseProgram(0);
+
+		if (isBreaking || isBroken) {
+			const unsigned int maskShaderUTransparencyCoefficent = glGetUniformLocation(maskShader, "uTransparencyCoefficient");
+			glProgramUniform1f(
+				maskShader,
+				maskShaderUTransparencyCoefficent,
+				isRepairing ? (GLfloat) (breakdownTime - (renderStartTime - repairBeginningTime)) / 3 : (GLfloat) (isBroken ? breakdownTime : (renderStartTime - breakdownBeginningTime)) / 3
+			);
+			glUseProgram(maskShader);
+			glBindVertexArray(maskVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		}
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -1100,6 +1593,9 @@ int main(void) {
 		renderStartTime = glfwGetTime();
 	}
 
+	teardownGlElementBuffers(secondSmokeFirstCloudVAO, secondSmokeFirstCloudVBO, secondSmokeFirstCloudEBO);
+	teardownGlElementBuffers(secondSmokeSecondCloudVAO, secondSmokeSecondCloudVBO, secondSmokeSecondCloudEBO);
+	teardownGlElementBuffers(secondSmokeThirdCloudVAO, secondSmokeThirdCloudVBO, secondSmokeThirdCloudEBO);
 	teardownGlElementBuffers(bodyVAO, bodyVBO, bodyEBO);
 	teardownGlElementBuffers(legOneVAO, legOneVBO, legOneEBO);
 	teardownGlElementBuffers(legTwoVAO, legTwoVBO, legTwoEBO);
@@ -1111,6 +1607,11 @@ int main(void) {
 	teardownGlElementBuffers(doorOpenVAO, doorOpenVBO, doorOpenEBO);
 	teardownGlElementBuffers(glassVAO, glassVBO, glassEBO);
 	teardownGlElementBuffers(handleVAO, handleVBO, handleEBO);
+	teardownGlElementBuffers(firstErrorVAO, firstErrorVBO, firstErrorEBO);
+	teardownGlElementBuffers(secondErrorVAO, secondErrorVBO, secondErrorEBO);
+	teardownGlElementBuffers(thirdErrorVAO, thirdErrorVBO, thirdErrorEBO);
+	teardownGlElementBuffers(fourthErrorVAO, fourthErrorVBO, fourthErrorEBO);
+	teardownGlElementBuffers(fifthErrorVAO, fifthErrorVBO, fifthErrorEBO);
 	teardownGlElementBuffers(firstDigitVAO, firstDigitVBO, firstDigitEBO);
 	teardownGlElementBuffers(secondDigitVAO, secondDigitVBO, secondDigitEBO);
 	teardownGlElementBuffers(separatorBackgroundVAO, separatorBackgroundVBO, separatorBackgroundVBO);
@@ -1118,11 +1619,13 @@ int main(void) {
 	teardownGlElementBuffers(secondSeparatorVAO, secondSeparatorVBO, secondSeparatorEBO);
 	teardownGlElementBuffers(thirdDigitVAO, thirdDigitVBO, thirdDigitEBO);
 	teardownGlElementBuffers(fourthDigitVAO, fourthDigitVBO, fourthDigitEBO);
-	teardownGlElementBuffers(numpadVAO, numpadVBO, numpadEBO);
 	teardownGlElementBuffers(indicatorVAO, indicatorVBO, indicatorEBO);
-
-	// NOTE: Always release last
+	teardownGlElementBuffers(numpadVAO, numpadVBO, numpadEBO);
+	teardownGlElementBuffers(firstSmokeFirstCloudVAO, firstSmokeFirstCloudVBO, firstSmokeFirstCloudEBO);
+	teardownGlElementBuffers(firstSmokeSecondCloudVAO, firstSmokeSecondCloudVBO, firstSmokeSecondCloudEBO);
+	teardownGlElementBuffers(firstSmokeThirdCloudVAO, firstSmokeThirdCloudVBO, firstSmokeThirdCloudEBO);
 	teardownGlElementBuffers(signatureVAO, signatureVBO, signatureEBO);
+	teardownGlElementBuffers(maskVAO, maskVBO, maskEBO);
 	glDeleteProgram(basicShader);
 	glfwTerminate();
 
