@@ -803,10 +803,10 @@ int main(void) {
 	setupGlBuffersForTransparentObject(secondSmokeFirstCloudVertices, rectangleIndices, secondSmokeFirstCloudVAO, secondSmokeFirstCloudVBO, secondSmokeFirstCloudEBO);
 
 	const float secondSmokeSecondCloudVertices[] = {
-		.45f,  .40f,	.25f, .25f, .25f, .50f,
-		.65f,  .40f,	.25f, .25f, .25f, .50f,
-		.45f,  .00f,	.25f, .25f, .25f, .50f,
-		.65f,  .00f,	.25f, .25f, .25f, .50f,
+		.475f,  .400f,	.25f, .25f, .25f, .50f,
+		.675f,  .400f,	.25f, .25f, .25f, .50f,
+		.475f,  .000f,	.25f, .25f, .25f, .50f,
+		.675f,  .000f,	.25f, .25f, .25f, .50f,
 	};
 
 	unsigned int secondSmokeSecondCloudVAO, secondSmokeSecondCloudVBO, secondSmokeSecondCloudEBO;
@@ -814,10 +814,10 @@ int main(void) {
 	setupGlBuffersForTransparentObject(secondSmokeSecondCloudVertices, rectangleIndices, secondSmokeSecondCloudVAO, secondSmokeSecondCloudVBO, secondSmokeSecondCloudEBO);
 	
 	const float secondSmokeThirdCloudVertices[] = {
-		.45f,  1.0f,	.25f, .25f, .25f, .25f,
-		.85f,  1.0f,	.25f, .25f, .25f, .25f,
-		.45f,  .20f,	.25f, .25f, .25f, .25f,
-		.85f,  .20f,	.25f, .25f, .25f, .25f,
+		.525f,  1.00f,	.25f, .25f, .25f, .25f,
+		.925f,  1.00f,	.25f, .25f, .25f, .25f,
+		.525f,  .200f,	.25f, .25f, .25f, .25f,
+		.925f,  .200f,	.25f, .25f, .25f, .25f,
 	};
 
 	unsigned int secondSmokeThirdCloudVAO, secondSmokeThirdCloudVBO, secondSmokeThirdCloudEBO;
@@ -1112,10 +1112,10 @@ int main(void) {
 	setupGlBuffersForTransparentObject(firstSmokeFirstCloudVertices, rectangleIndices, firstSmokeFirstCloudVAO, firstSmokeFirstCloudVBO, firstSmokeFirstCloudEBO);
 
 	const float firstSmokeSecondCloudVertices[] = {
-		-.65f,  .40f,	.25f, .25f, .25f, .50f,
-		-.45f,  .40f,	.25f, .25f, .25f, .50f,
-		-.65f,  .00f,	.25f, .25f, .25f, .50f,
-		-.45f,  .00f,	.25f, .25f, .25f, .50f,
+		-.675f,  .400f,	.25f, .25f, .25f, .50f,
+		-.475f,  .400f,	.25f, .25f, .25f, .50f,
+		-.675f,  .000f,	.25f, .25f, .25f, .50f,
+		-.475f,  .000f,	.25f, .25f, .25f, .50f,
 	};
 
 	unsigned int firstSmokeSecondCloudVAO, firstSmokeSecondCloudVBO, firstSmokeSecondCloudEBO;
@@ -1123,10 +1123,10 @@ int main(void) {
 	setupGlBuffersForTransparentObject(firstSmokeSecondCloudVertices, rectangleIndices, firstSmokeSecondCloudVAO, firstSmokeSecondCloudVBO, firstSmokeSecondCloudEBO);
 
 	const float firstSmokeThirdCloudVertices[] = {
-		-.85f,  1.0f,	.25f, .25f, .25f, .25f,
-		-.45f,  1.0f,	.25f, .25f, .25f, .25f,
-		-.85f,  .20f,	.25f, .25f, .25f, .25f,
-		-.45f,  .20f,	.25f, .25f, .25f, .25f,
+		-.925f,  1.0f,	.25f, .25f, .25f, .25f,
+		-.525f,  1.0f,	.25f, .25f, .25f, .25f,
+		-.925f,  .20f,	.25f, .25f, .25f, .25f,
+		-.525f,  .20f,	.25f, .25f, .25f, .25f,
 	};
 
 	unsigned int firstSmokeThirdCloudVAO, firstSmokeThirdCloudVBO, firstSmokeThirdCloudEBO;
