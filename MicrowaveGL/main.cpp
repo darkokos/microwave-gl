@@ -8,6 +8,8 @@
 #include <map>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <chrono>
+#include <thread>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -58,6 +60,7 @@ struct Numpad {
 };
 
 constexpr auto WINDOW_TITLE = "Microwave";
+constexpr double targetRenderTime = (double) 1 / 60;
 
 int windowWidth;
 int windowHeight;
@@ -74,6 +77,8 @@ void updateNumpad();
 const unsigned int getWindowDimension(const bool&);
 void framebufferSizeCallback(GLFWwindow *const, const int, const int);
 void insertIntoTimer(const unsigned int&, const size_t&);
+void decrementTimerValue(const size_t&);
+bool isTimerValueZero();
 void resetTimerValue();
 void handleButtonPress(const NumpadCharacter&);
 const bool isWithin(const Button&, const double&, const double&);
@@ -113,14 +118,14 @@ void initNumpad(const vec2& position, const float& normalisedWidth, const float&
 
 	numpad.position = vec2((numpad.normalisedPosition.x + 1.f) * windowWidth / 2.f, (1.f - numpad.normalisedPosition.y) * windowHeight / 2.f);
 
-	numpad.width = numpad.normalisedWidth * windowWidth / 2.f;
-	numpad.height = numpad.normalisedHeight * windowHeight / 2.f;
+	numpad.width = (unsigned int) (numpad.normalisedWidth * windowWidth / 2);
+	numpad.height = (unsigned int) (numpad.normalisedHeight * windowHeight / 2);
 
 	const unsigned int buttonWidth = numpad.width / 3;
 	const unsigned int buttonHeight = numpad.height / 6;
 	for (size_t i = 0; i < 17; i++) {
 		const float buttonX = numpad.position.x + (i == 16 ? 2 : (i % 3)) * buttonWidth;
-		const float buttonY = numpad.position.y + (float)(i / 3) * buttonHeight;
+		const float buttonY = numpad.position.y + (float) (i / 3) * buttonHeight;
 		numpad.buttons[i].position = vec2(buttonX, buttonY);
 		numpad.buttons[i].width = buttonWidth;
 		numpad.buttons[i].height = buttonHeight;
@@ -131,14 +136,14 @@ void initNumpad(const vec2& position, const float& normalisedWidth, const float&
 void updateNumpad() {
 	numpad.position = vec2((numpad.normalisedPosition.x + 1.f) * windowWidth / 2.f, (1.f - numpad.normalisedPosition.y) * windowHeight / 2.f);
 
-	numpad.width = numpad.normalisedWidth * windowWidth / 2.f;
-	numpad.height = numpad.normalisedHeight * windowHeight / 2.f;
+	numpad.width = (unsigned int) (numpad.normalisedWidth * windowWidth / 2);
+	numpad.height = (unsigned int) (numpad.normalisedHeight * windowHeight / 2);
 
 	const unsigned int buttonWidth = numpad.width / 3;
 	const unsigned int buttonHeight = numpad.height / 6;
 	for (size_t i = 0; i < 17; i++) {
 		const float buttonX = numpad.position.x + (i == 16 ? 2 : (i % 3)) * buttonWidth;
-		const float buttonY = numpad.position.y + (float)(i / 3) * buttonHeight;
+		const float buttonY = numpad.position.y + (float) (i / 3) * buttonHeight;
 		numpad.buttons[i].position = vec2(buttonX, buttonY);
 		numpad.buttons[i].width = buttonWidth;
 		numpad.buttons[i].height = buttonHeight;
@@ -190,6 +195,32 @@ void insertIntoTimer(const unsigned int& digit, const size_t& index) {
 	}
 }
 
+void decrementTimerValue(const size_t& index) {
+	if (!index && !timerValue[index]) {
+		isRunning = false;
+		return;
+	}
+
+	if (!timerValue[index]) {
+		decrementTimerValue(index - 1);
+
+		if (isRunning)
+			timerValue[index] = index != 2 ? 9 : 5;
+
+		return;
+	}
+
+	timerValue[index]--;
+}
+
+bool isTimerValueZero() {
+	for (size_t i = 0; i < 4; i++)
+		if (timerValue[i])
+			return false;
+	
+	return true;
+}
+
 void resetTimerValue() {
 	for (size_t i = 0; i < 4; i++)
 		timerValue[i] = 0;
@@ -200,23 +231,92 @@ void handleButtonPress(const NumpadCharacter& pressedCharacter) {
 		isBroken = false;
 
 	switch (pressedCharacter) {
-		case One: insertIntoTimer(1, 3); break;
-		case Two: insertIntoTimer(2, 3); break;
-		case Three: insertIntoTimer(3, 3); break;
-		case Four: insertIntoTimer(4, 3); break;
-		case Five: insertIntoTimer(5, 3); break;
-		case Six: insertIntoTimer(6, 3); break;
-		case Seven: insertIntoTimer(7, 3); break;
-		case Eight: insertIntoTimer(8, 3); break;
-		case Nine: insertIntoTimer(9, 3); break;
-		case Open: isOpen = true; break;
-		case Zero: insertIntoTimer(0, 3); break;
-		case Close: isOpen = false; break;
-		case Start: isRunning = true; break;
-		case Stop: isRunning = false; break;
-		case Reset: isRunning = false; resetTimerValue(); break;
-		case Transparent: isTransparent = !isTransparent; break;
-		case Break: isBroken = true; break;
+		case One:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(1, 3);
+			break;
+		case Two:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(2, 3);
+			break;
+		case Three:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(3, 3);
+			break;
+		case Four:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(4, 3);
+			break;
+		case Five:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(5, 3);
+			break;
+		case Six:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(6, 3);
+			break;
+		case Seven:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(7, 3);
+			break;
+		case Eight:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(8, 3);
+			break;
+		case Nine:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(9, 3);
+			break;
+		case Open:
+			isRunning = false;
+			isOpen = true;
+			break;
+		case Zero:
+			if (isRunning)
+				break;
+
+			insertIntoTimer(0, 3);
+			break;
+		case Close:
+			isOpen = false;
+			break;
+		case Start:
+			if (isTimerValueZero() || isOpen)
+				break;
+
+			isRunning = true;
+			break;
+		case Stop:
+			isRunning = false;
+			break;
+		case Reset:
+			isRunning = false;
+			resetTimerValue();
+			break;
+		case Transparent:
+			isTransparent = !isTransparent;
+			break;
+		case Break:
+			isBroken = true;
+			break;
 	}
 }
 
@@ -354,7 +454,7 @@ void setupSharpTexture(const unsigned int& texture) {
 
 const vector<float> createCircleVertices(const float& centerX, const float& centerY, const float& radius, const unsigned int& segments) {
 	vector<float> vertices;
-	const float step = 2.f * M_PI / segments;
+	const float step = 2.f * (float) M_PI / segments;
 
 	vertices.push_back(centerX);
 	vertices.push_back(centerY);
@@ -619,15 +719,26 @@ int main(void) {
 	setupGlBuffersForBasicObject(interiorVertices, rectangleIndices, interiorVAO, interiorVBO, interiorEBO);
 
 	const float foodVertices[] = {
-		-.3125f, -.10f,		0.f, 1.f,
+		-.3625f, -.10f,		0.f, 1.f,
 		 .0125f, -.10f,		1.f, 1.f,
-		-.3125f, -.35f,		0.f, 0.f,
+		-.3625f, -.35f,		0.f, 0.f,
 		 .0125f, -.35f,		1.f, 0.f,
 	};
 
 	unsigned int foodVAO, foodVBO, foodEBO;
 
 	setupGlBuffersForTextureObject(foodVertices, rectangleIndices, foodVAO, foodVBO, foodEBO);
+
+	const float raysVertices[] = {
+		-.2000f,  .30f,	1.f, 1.f, 0.f, .5f,
+		-.1500f,  .30f,	1.f, 1.f, 0.f, .5f,
+		-.3625f, -.35f, 1.f, 1.f, 0.f, .5f,
+		 .0125f, -.35f,	1.f, 1.f, 0.f, .5f,
+	};
+
+	unsigned int raysVAO, raysVBO, raysEBO;
+
+	setupGlBuffersForTransparentObject(raysVertices, rectangleIndices, raysVAO, raysVBO, raysEBO);
 
 	const float centerX = -.175f;
 	const float centerY = .3f;
@@ -808,11 +919,22 @@ int main(void) {
 	for (size_t i = 0; i < 10; i++)
 		setup8BitTexture(digits[i]);
 
+	double renderStartTime = glfwGetTime();
+	double lastTimerChangeTime = glfwGetTime();
+
 	while (!glfwWindowShouldClose(window)) {
 		processWindowInput(window);
 
 		glClearColor(1.f, .33f, .0f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		const double timerAssessmentTime = glfwGetTime();
+		if (isRunning) {
+			if (timerAssessmentTime - lastTimerChangeTime >= 1) {
+				decrementTimerValue(3);
+				lastTimerChangeTime = timerAssessmentTime;
+			}
+		} else lastTimerChangeTime = glfwGetTime();
 
 		glUseProgram(basicShader);
 		glBindVertexArray(bodyVAO);
@@ -852,9 +974,19 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
+		if (isRunning) {
+			glUseProgram(transparentShader);
+			glBindVertexArray(raysVAO);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(0);
+			glUseProgram(0);
+		}
+
+		const unsigned int lampShaderUIsOn = glGetUniformLocation(lampShader, "uIsOn");
+		glProgramUniform1i(lampShader, lampShaderUIsOn, isRunning);
 		glUseProgram(lampShader);
 		glBindVertexArray(lampVAO);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, lampVertices.size() / 2);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, (GLsizei) lampVertices.size() / 2);
 		glBindVertexArray(0);
 		glUseProgram(0);
 
@@ -939,6 +1071,10 @@ int main(void) {
 		glBindVertexArray(0);
 		glUseProgram(0);
 
+		const unsigned int indicatorShaderUIsOn = glGetUniformLocation(indicatorShader, "uIsOn");
+		glProgramUniform1i(indicatorShader, indicatorShaderUIsOn, isRunning);
+		const unsigned int indicatorShaderUTime = glGetUniformLocation(indicatorShader, "uTime");
+		glProgramUniform1f(indicatorShader, indicatorShaderUTime, 2 * glfwGetTime());
 		glUseProgram(indicatorShader);
 		glBindVertexArray(indicatorVAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -956,6 +1092,12 @@ int main(void) {
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		double renderTime = glfwGetTime() - renderStartTime;
+		if (renderTime < targetRenderTime)
+			this_thread::sleep_for(chrono::nanoseconds((long long) ((targetRenderTime - renderTime) * 1'000'000'000)));
+
+		renderStartTime = glfwGetTime();
 	}
 
 	teardownGlElementBuffers(bodyVAO, bodyVBO, bodyEBO);
@@ -964,6 +1106,7 @@ int main(void) {
 	teardownGlElementBuffers(doorSlitVAO, doorSlitVBO, doorSlitEBO);
 	teardownGlElementBuffers(interiorVAO, interiorVBO, interiorEBO);
 	teardownGlElementBuffers(foodVAO, foodVBO, foodEBO);
+	teardownGlElementBuffers(raysVAO, raysVBO, raysEBO);
 	teardownGlArrayBuffers(lampVAO, lampVBO);
 	teardownGlElementBuffers(doorOpenVAO, doorOpenVBO, doorOpenEBO);
 	teardownGlElementBuffers(glassVAO, glassVBO, glassEBO);
